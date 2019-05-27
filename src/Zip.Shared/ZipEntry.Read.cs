@@ -124,8 +124,8 @@ namespace Ionic.Zip
             Int16 filenameLength = (short)(block[i++] + block[i++] * 256);
             Int16 extraFieldLength = (short)(block[i++] + block[i++] * 256);
 
-            block = new byte[filenameLength];
-            n = ze.ArchiveStream.Read(block, 0, block.Length);
+            ze._FileNameBytes = new byte[filenameLength];
+            n = ze.ArchiveStream.Read(ze._FileNameBytes, 0, ze._FileNameBytes.Length);
             bytesRead += n;
 
             // if the UTF8 bit is set for this entry, override the
@@ -138,7 +138,7 @@ namespace Ionic.Zip
                 ze.AlternateEncodingUsage = ZipOption.Always;
             }
 
-            ze._FileNameInArchive = ze.AlternateEncoding.GetString(block);
+            ze._FileNameInArchive = ze.AlternateEncoding.GetString(ze._FileNameBytes);
 
             // workitem 6898
             if (ze._FileNameInArchive.EndsWith("/")) ze.MarkAsDirectory();
@@ -513,6 +513,17 @@ namespace Ionic.Zip
                         case 0x0017: // workitem 7968: handle PKWare Strong encryption header
                             j = ProcessExtraFieldPkwareStrongEncryption(buffer, j);
                             break;
+
+                        case 0x7075:  // Info-ZIP Unicode Path Extra Field
+                            if ((_BitField & 0x0800) == 0)
+                                j = ProcessExtraFieldUPath(buffer, j, dataSize, posn);
+                            break;
+
+                        case 0x6375:  // Info-ZIP Unicode Comment Extra Field
+                            if ((_BitField & 0x0800) == 0)
+                                j = ProcessExtraFieldUCom(buffer, j, dataSize, posn);
+                            break;
+
                     }
 
                     // move to the next Header in the extra field
@@ -764,6 +775,49 @@ namespace Ionic.Zip
             return j;
         }
 
+        private string ReadUTF8String(byte[] buffer, int offset, int size)
+        {
+            byte[] block = new byte[size];
+            Array.Copy(buffer, offset, block, 0, size);
+            return Ionic.Zip.SharedUtilities.Utf8StringFromBuffer(block);
+        }
+
+        private bool NameCRCEquals(Int32 NameCRC)
+        {
+            var mstr = new MemoryStream(_FileNameBytes, false);
+            var crc = new Ionic.Crc.CRC32();
+            return NameCRC == crc.GetCrc32(mstr);
+        }
+
+        private int ProcessExtraFieldUPath(byte[] buffer, int j, UInt16 dataSize, long posn)
+        {
+            if (dataSize < 6)
+                throw new BadReadException(String.Format("  Unexpected size (0x{0:X4}) for Unicode Path extra field at position 0x{1:X16}", dataSize, posn));
+
+            byte version = buffer[j];
+            Int32 nameCRC32 = (Int32)(buffer[j+1] + buffer[j+2] * 256 + buffer[j+3] * 256*256 + buffer[j+4] * 256*256*256);
+
+            if (version == 1 && NameCRCEquals(nameCRC32) )
+            {
+               _FileNameInArchive = ReadUTF8String(buffer, j+5, dataSize-5);
+            }
+            return j+= dataSize;
+        }
+
+        private int ProcessExtraFieldUCom(byte[] buffer, int j, UInt16 dataSize, long posn)
+        {
+            if (dataSize < 5)
+                throw new BadReadException(String.Format("  Unexpected size (0x{0:X4}) for Unicode Comment extra field at position 0x{1:X16}", dataSize, posn));
+
+            byte version = buffer[j];
+            Int32 nameCRC32 = (Int32)(buffer[j + 1] + buffer[j + 2] * 256 + buffer[j + 3] * 256 * 256 + buffer[j + 4] * 256 * 256 * 256);
+
+            if (dataSize > 5 && version == 1 && NameCRCEquals(nameCRC32) )
+            {
+               _Comment = ReadUTF8String(buffer, j + 5, dataSize - 5);
+            }
+            return j += dataSize;
+        }
 
     }
 }

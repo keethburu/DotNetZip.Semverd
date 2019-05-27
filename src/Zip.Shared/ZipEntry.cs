@@ -2677,6 +2677,7 @@ namespace Ionic.Zip
         private bool _TrimVolumeFromFullyQualifiedPaths = true;  // by default, trim them.
         internal string _LocalFileName;
         private string _FileNameInArchive;
+        private byte[] _FileNameBytes;
         internal Int16 _VersionNeeded;
         internal Int16 _BitField;
         internal Int16 _CompressionMethod;

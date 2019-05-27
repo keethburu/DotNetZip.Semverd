@@ -264,17 +264,17 @@ namespace Ionic.Zip
                 // workitem 7801
                 zde.IsText = ((zde._InternalFileAttrs & 0x01) == 0x01);
 
-                block = new byte[zde._filenameLength];
-                n = s.Read(block, 0, block.Length);
+                zde._FileNameBytes = new byte[zde._filenameLength];
+                n = s.Read(zde._FileNameBytes, 0, zde._FileNameBytes.Length);
                 bytesRead += n;
                 if ((zde._BitField & 0x0800) == 0x0800)
                 {
                     // UTF-8 is in use
-                    zde._FileNameInArchive = Ionic.Zip.SharedUtilities.Utf8StringFromBuffer(block);
+                    zde._FileNameInArchive = Ionic.Zip.SharedUtilities.Utf8StringFromBuffer(zde._FileNameBytes);
                 }
                 else
                 {
-                    zde._FileNameInArchive = Ionic.Zip.SharedUtilities.StringFromBuffer(block, expectedEncoding);
+                    zde._FileNameInArchive = Ionic.Zip.SharedUtilities.StringFromBuffer(zde._FileNameBytes, expectedEncoding);
                 }
 
                 // workitem 10330
