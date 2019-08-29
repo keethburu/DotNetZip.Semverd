@@ -994,6 +994,15 @@ namespace Ionic.Zip
             }
         }
 
+        /// <summary>
+        /// Default is true. Set to false, in order to prevent 
+        /// <see cref="this[string]"/> from using normalization of file names if
+        /// required. 
+        /// This IS required, if the Zip was created using ill formatted file names.
+        /// DotNetZip reads them (with the incorrect name), but won't find them, 
+        /// because it is applying normalization to file names before using them as search key.
+        /// </summary>
+        public bool NormalizeFileNameWithNameBasedIndexer { get; set; } = true;
 
         /// <summary>
         ///   Specify whether to use ZIP64 extensions when saving a zip archive.
@@ -3087,7 +3096,12 @@ namespace Ionic.Zip
         ///   for forward slashes.  So, <c>zip["dir1\\entry1.txt"].FileName ==
         ///   "dir1/entry.txt"</c>.
         /// </para>
-        ///
+        /// 
+        /// <para>
+        /// set <see cref="NormalizeFileNameWithNameBasedIndexer"/> to false in order 
+        /// to avoid normalization
+        /// </para>
+        /// 
         /// <para>
         ///   Directory entries in the zip file may be retrieved via this indexer only
         ///   with names that have a trailing slash. DotNetZip automatically appends a
@@ -3143,7 +3157,10 @@ namespace Ionic.Zip
             get
             {
                 var entries = RetrievalEntries;
-                var key = SharedUtilities.NormalizePathForUseInZipFile(fileName);
+                /// not using nornmalizaiton micht be required, if the Zip was created using ill formatted file names.
+                /// Otherwise DotNetZip will read them (with the incorrect name), but won't find them, 
+                /// because it is applying normalization to file names before using them as search key.
+                var key = this.NormalizeFileNameWithNameBasedIndexer ? SharedUtilities.NormalizePathForUseInZipFile(fileName) : fileName;
                 if (entries.ContainsKey(key))
                     return entries[key];
                 // workitem 11056
@@ -3446,17 +3463,18 @@ namespace Ionic.Zip
         /// <param name="entry">
         /// The <c>ZipEntry</c> to remove from the zip.
         /// </param>
+        /// <param name="normalizePath">do not normalize the FileName, but use it as it is</param>
         ///
         /// <seealso cref="Ionic.Zip.ZipFile.RemoveSelectedEntries(string)"/>
         ///
-        public void RemoveEntry(ZipEntry entry)
+        public void RemoveEntry(ZipEntry entry, bool normalizePath = true)
         {
             //if (!_entries.Values.Contains(entry))
             //    throw new ArgumentException("The entry you specified does not exist in the zip archive.");
             if (entry == null)
                 throw new ArgumentNullException("entry");
-
-            var path = SharedUtilities.NormalizePathForUseInZipFile(entry.FileName);
+            
+            var path = normalizePath ? SharedUtilities.NormalizePathForUseInZipFile(entry.FileName) : entry.FileName;
             _entries.Remove(path);
             if (!AnyCaseInsensitiveMatches(path))
                 _entriesInsensitive.Remove(path);
@@ -3565,6 +3583,16 @@ namespace Ionic.Zip
 
             RemoveEntry(e);
         }
+
+        //public void RemoveEntry(ZipEntry zipEntry)
+        //{
+           
+        //    ZipEntry e = this[zipEntry.FileName];
+        //    if (e == null)
+        //        throw new ArgumentException("The entry you specified was not found in the zip archive.");
+
+        //    RemoveEntry(e);
+        //}
 
 
         #endregion
