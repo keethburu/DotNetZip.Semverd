@@ -889,6 +889,24 @@ namespace Ionic.Zip
             }
         }
 
+        /// <summary>
+        /// FileName after applying Normalization
+        /// </summary>
+        public string FileNameNormalized
+        {
+            get
+            {
+                return SharedUtilities.NormalizePathForUseInZipFile(_FileNameInArchive);
+            }
+        }
+
+        /// <summary>
+        /// normalize the FileName
+        /// </summary>
+        public void NormalizePathForUseInZipFile()
+        {
+            this.FileName = SharedUtilities.NormalizePathForUseInZipFile(_FileNameInArchive);
+        }
 
         /// <summary>
         /// The stream that provides content for the ZipEntry.
@@ -1833,7 +1851,7 @@ namespace Ionic.Zip
         ///   Some comments on updating archives: If you read a <c>ZipFile</c>, you
         ///   cannot modify the password on any encrypted entry, except by extracting
         ///   the entry with the original password (if any), removing the original entry
-        ///   via <see cref="ZipFile.RemoveEntry(ZipEntry)"/>, and then adding a new
+        ///   via <see cref="ZipFile.RemoveEntry(ZipEntry,bool)"/>, and then adding a new
         ///   entry with a new Password.
         /// </para>
         ///

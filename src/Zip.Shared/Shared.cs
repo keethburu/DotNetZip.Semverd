@@ -564,7 +564,7 @@ namespace Ionic.Zip
             throw new IOException();
         }
 
-        public static string InternalGetTempFileName()
+        internal static string InternalGetTempFileName()
         {
             return "DotNetZip-" + Path.GetRandomFileName().Substring(0, 8) + ".tmp";
         }

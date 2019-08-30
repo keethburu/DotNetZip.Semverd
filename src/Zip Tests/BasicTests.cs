@@ -28,7 +28,7 @@ using System.Text;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RE = System.Text.RegularExpressions;
-
+using System.Linq;
 using Ionic.Zip;
 using Ionic.Zip.Tests.Utilities;
 using System.IO;
@@ -1317,6 +1317,41 @@ namespace Ionic.Zip.Tests.Basic
             }
         }
 
+
+      
+
+        [TestMethod]
+        public void NormalzeLeadingSlashes()
+        {
+            string filename = Path.Combine(CurrentDir, "zips\\zero-length-dirnames.zip");
+            string copy = filename + ".copy.zip";
+            if (File.Exists(copy))
+            {
+                File.Delete(copy);
+            }
+           
+            using (ZipFile zip = ZipFile.Read(filename))
+            {
+                zip.NormalizeFileNameWithNameBasedIndexer = false;
+                var ze = zip.Entries.First();
+                Dictionary<string, ZipEntry> zes = new Dictionary<string, ZipEntry>();
+                foreach (ZipEntry e in zip.Entries)
+                {
+                    zes.Add(e.FileName, e);
+                }
+
+                foreach (var item in zes.Values)
+                {
+                    item.NormalizePathForUseInZipFile();
+                }
+                zip.Save(copy);
+                // zip.Save()
+
+            }
+
+
+
+        }
 
         [TestMethod]
         public void ExtraField_TestNull()
